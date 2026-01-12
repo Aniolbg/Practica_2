@@ -26,12 +26,13 @@ html_content <- content(res, "text", encoding = "UTF-8")
 
 ```
 
+### 2.
 
-### 2. 
-```{r}
+```{r echo=TRUE}
 doc <- htmlParse(html_content, asText = TRUE)
+titulos <- xpathSApply(doc, "//title", xmlValue, "title")
+print(titulos)
 ```
-
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
