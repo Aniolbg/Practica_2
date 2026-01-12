@@ -11,6 +11,7 @@ install.packages("rvest")
 install.packages("httr")
 install.packages("XML")
 install.packages("dplyr")
+
 library(httr)
 library(XML)
 library(rvest)
@@ -19,16 +20,22 @@ library(dplyr)
 
 ## Pregunta 1:
 
-### 1.
+### 1. Descargar la página web de la URL indicada, y almacenarlo en un formato de R apto para ser tratado.
+
+> El primer paso para realizar tareas de crawling y scraping es poder descargar los datos de la web. Para esto usaremos la capacidad de R y de sus librerías (httr y XML) para descargar webs y almacenarlas en variables que podamos convertir en un formato fácil de analizar (p.e. de HTML a XML).
+
+Usamos el link para obtener los contenidos de la web y posteriormente parsearlo.
 
 ```{r}
-enlace  <- "https://www.mediawiki.org/wiki/MediaWiki"
-res <- GET(enlace) 
+LINK  <- "https://www.mediawiki.org/wiki/MediaWiki"
+res <- GET(LINK) 
 html_content <- content(res, "text", encoding = "UTF-8")
 
 ```
 
-### 2.
+### 2. Analizar el contenido de la web, buscando el título de la página (que en HTML se etiqueta como “title”).
+
+> En las cabeceras web encontramos información como el título, los ficheros de estilo visual, y meta-información como el nombre del autor de la página, una descripción de esta, el tipo de codificación de esta, o palabras clave que indican qué tipo de información contiene la página. Una vez descargada la página, y convertida a un formato analizable (como XML), buscaremos los elementos de tipo `title`. P.e. `<title>Titulo de Página</title>`.
 
 ```{r echo=TRUE}
 doc <- htmlParse(html_content, asText = TRUE)
@@ -36,36 +43,91 @@ titulos <- xpathSApply(doc, "//title", xmlValue, "title")
 print(titulos)
 ```
 
-### 3.
+### 3. Analizar el contenido de la web, buscando todos los enlaces (que en HTML se etiquetan como “a”), buscando el texto del enlace, así como la URL.
 
-```{r echo=TRUE}
+> Vamos a extraer, usando las funciones de búsqueda XML, todos los enlaces que salen de esta página con tal de listarlos y poder descargarlas más tarde. Sabemos que estos son elementos de tipo `<a>`, que tienen el atributo “href” para indicar la URL del enlace. P.e. `<a href = ‘enlace’>Texto del Enlace</a>` . Del enlace nos quedaremos con la URL de destino y con el valor del enlace (texto del enlace).
+
+Para resolver este problema, primero tenemos que parsear la pagina. Luego usamos las funciones de la librería XML para obtener los enlaces y el texto guardado en ellas.
+
+```{r}
 doc <- htmlParse(html_content, asText = TRUE)
 enlaces <- xpathSApply(doc, "//a", xmlGetAttr, "href")
 text_enlace <- xpathSApply(doc, "//a", xmlValue)
 is.null(text_enlace)
-print(text_enlace)
 ```
 
-### 4.
+Imprimimos los 10 primeros links:
 
-TODO: volver a escrivir explicación #
-Para poder generar correctamente la tabla se han eliminado algunas entradas las cuales el enlace era solo un "\#".
+```{r echo=TRUE}
+head(text_enlace, 10)
+```
+
+### 4. Generar una tabla con cada enlace encontrado, indicando el texto que acompaña el enlace, y el número de veces que aparece un enlace con ese mismo objetivo.
+
+> En este paso nos interesa reunir los datos obtenidos en el anterior paso. Tendremos que comprobar, para cada enlace, cuantas veces aparece.
+
+Creamos un dataframe que contiene las url y los enlaces.
 
 ```{r}
 df_enlaces <- data.frame(url = enlaces, texto = text_enlace, stringsAsFactors = FALSE )
-
-df_enlaces <- df_enlaces[df_enlaces$url!="#",]
-
-df_enlaces_dedup <- df_enlaces %>% count(url, texto)
-View(df_enlaces_dedup)
-
-
-
 ```
 
+En esta sección nos dimos cuenta de que existen algunos links relacionados a imagenes que thenen una url = `#`. Como no són links normales, tomamos la decisión de quitarlos del dataset.
 
-### 5. 
+```{r}
+df_enlaces <- df_enlaces[df_enlaces$url!="#",]
+```
+
+Posteriormente usamos la función `count` de *dyplr* para deduplicar las entradas repetidas y contar el numero de repeticiones.
+
+```{r}
+df_enlaces_dedup <- df_enlaces %>% count(url, texto)
+View(df_enlaces_dedup)
+```
+
+### 5. Para cada enlace, seguirlo e indicar si está activo (podemos usar el código de status HTTP al hacer una petición a esa URL).
+
+> En este paso podemos usar la función HEAD de la librería “httr”, que en vez de descargarse la página como haría GET, solo consultamos los atributos de la página o fichero destino.
+>
+> HEAD nos retorna una lista de atributos, y de entre estos hay uno llamado “header” que contiene más atributos sobre la página buscada. Si seguimos podemos encontrar el “`status_code`” en “`resultado$status_code`”. El “status_code” nos indica el resultado de la petición de página o fichero. Este código puede indicar que la petición ha sido correcta (`200`), que no se ha encontrado (`404`), que el acceso está restringido (`403`), etc.
+>
+> -   Tened en cuenta que hay enlaces con la URL relativa, con forma `/xxxxxx/xxxxx/a.html`. En este caso, podemos indicarle como “handle” el dominio de la página que estamos tratando, o añadirle el dominio a la URL con la función “paste”.
+> -   Tened en cuenta que puede haber enlaces externos con la URL absoluta, con forma “<http://xxxxxx/xxxx/a.html>” (o https), que los trataremos directamente.
+> -   Tened en cuenta que puede haber enlaces que apunten a subdominios distintos, con forma “//subdominio/xxxx/xxxx/a.html”. En este caso podemos adjuntarle el prefijo “https:” delante, convirtiendo la URL en absoluta.
+> -   Tened en cuenta URLS internas con tags, como por ejemplo “#search-p”. Estos apuntan a la misma página en la que estamos, pero diferente altura de página. Equivale a acceder a la URL relativa de la misma página en la que estamos.
+>
+> Es recomendado poner un tiempo de espera entre petición y petición de pocos segundos (comando “Sys.sleep”), para evitar ser “baneados” por el servidor. Para poder examinar las URLs podemos usar expresiones regulares, funciones como “grep”, o mirar si en los primeros caracteres de la URL encontramos “//” o “http”. Para tratar las URLs podemos usar la ayuda de la función “paste”, para manipular cadenas de caracteres y poder añadir prefijos a las URLs si fuera necesario.
 
 ```{r}
 # Se usa un bucle
+```
+
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+## Pregunta 2
+
+### 1. Un histograma con la frecuencia de aparición de los enlaces, pero separado por URLs absolutas (con “http...”) y URLs relativas.
+
+> Un gráfico de barras indicando la suma de enlaces que apuntan a otros dominios o servicios (distinto a <https://www.mediawiki.org> en el caso de ejemplo) vs. la suma de los otros enlaces.
+
+```{r}
+
+```
+
+### 2. Un gráfico de barras indicando la suma de enlaces que apuntan a otros dominios o servicios (distinto a <https://www.mediawiki.org> en el caso de ejemplo) vs. la suma de los otros enlaces.
+
+> Aquí queremos distinguir enlaces que apuntan a mediawiki versus el resto. Sabemos que las URLs relativas ya apuntan dentro, por lo tanto hay que analizar las URLs absolutas y comprobar que apunten a <https://www.mediawiki.org>.
+
+```{r}
+
+```
+
+### 3. Un gráfico de tarta (pie chart) indicando los porcentajes de Status de nuestro análisis.
+
+> Por ejemplo, si hay 6 enlaces con status “200” y 4 enlaces con status “`404`”, la tarta mostrará un 60% con la etiqueta “`200`” y un 40% con la etiqueta “`404`”. Este gráfico lo uniremos a los anteriores. El objetivo final es obtener una imagen que recopile los gráficos generados.
+
+```{r}
+
 ```
