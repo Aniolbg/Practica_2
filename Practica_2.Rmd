@@ -10,9 +10,11 @@ knitr::opts_chunk$set(echo = TRUE)
 install.packages("rvest")
 install.packages("httr")
 install.packages("XML")
+install.packages("dplyr")
 library(httr)
 library(XML)
 library(rvest)
+library(dplyr)
 ```
 
 ## Pregunta 1:
@@ -43,9 +45,20 @@ text_enlace <- xpathSApply(doc, "//a", xmlValue)
 is.null(text_enlace)
 print(text_enlace)
 ```
+
 ### 4.
 
+Para poder generar correctamente la tabla se han eliminado algunas entradas las cuales el enlace era solo un "\#".
+
 ```{r}
+df_enlaces <- data.frame(url = enlaces, texto = text_enlace, stringsAsFactors = FALSE )
+
+df_enlaces <- df_enlaces[df_enlaces$url!="#",]
+
+df_enlaces_dedup <- df_enlaces %>% count(url, texto)
+View(df_enlaces_dedup)
+
+
 
 ```
 
