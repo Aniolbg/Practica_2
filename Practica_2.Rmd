@@ -48,6 +48,7 @@ print(text_enlace)
 
 ### 4.
 
+TODO: volver a escrivir explicación #
 Para poder generar correctamente la tabla se han eliminado algunas entradas las cuales el enlace era solo un "\#".
 
 ```{r}
@@ -62,16 +63,9 @@ View(df_enlaces_dedup)
 
 ```
 
+
+### 5. 
+
 ```{r}
-
+# Se usa un bucle
 ```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
