@@ -214,5 +214,15 @@ ggplot(df_enlaces_dedup, aes(x = in_domain)) +
 > Por ejemplo, si hay 6 enlaces con status “200” y 4 enlaces con status “`404`”, la tarta mostrará un 60% con la etiqueta “`200`” y un 40% con la etiqueta “`404`”. Este gráfico lo uniremos a los anteriores. El objetivo final es obtener una imagen que recopile los gráficos generados.
 
 ```{r}
+df_status <- df_enlaces_dedup %>% count(status)
+
+ggplot(df_status, aes(x = "", y = n, fill = factor(status))) +
+  geom_col(width = 1) +
+  coord_polar(theta = "y") +
+  theme_void() +
+  scale_fill_brewer(palette = "Set3") +
+  labs(fill = "Status HTTP",
+       title = "Distribució de codis HTTP")
+
 
 ```
