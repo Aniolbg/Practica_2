@@ -141,10 +141,12 @@ for (i in 1:nrow(df_enlaces_dedup)) {
   df_enlaces_dedup$url_abs[i] <- url_abs
 
   # Obtenir status code
-  df_enlaces_dedup$status[i] <- try(HEAD(url_abs), silent = TRUE)
+  resultat <- try(HEAD(url_abs), silent = TRUE)
+  df_enlaces_dedup$status[i] <- resultat$status_code 
+  
 
   # Pausa per no saturar el servidor
-  #Sys.sleep(1)
+  Sys.sleep(1)
 }
 View(df_enlaces_dedup)
 
