@@ -165,6 +165,20 @@ View(df_enlaces_dedup)
 ### 1. Un histograma con la frecuencia de aparición de los enlaces, pero separado por URLs absolutas (con “http...”) y URLs relativas.
 
 ```{r}
+df_enlaces_dedup$is_absolute <- NA
+
+for (i in 1:nrow(df_enlaces_dedup)) {
+  u <- df_enlaces_dedup$enlace[i]
+  if (grepl("^http", u)) {
+    df_enlaces_dedup$is_absolute[i] <- TRUE
+  }
+  else{
+    df_enlaces_dedup$is_absolute[i] <- FALSE
+  }
+  
+}
+
+ggplot(df_enlaces_dedup, aes(x = n, fill = is_absolute)) + geom_histogram(alpha = 0.6, position = "dodge", bins = 5) + scale_fill_manual(values = c("TRUE" = "blue", "FALSE" = "red")) + theme_minimal()
 
 ```
 
