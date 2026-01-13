@@ -178,7 +178,7 @@ for (i in 1:nrow(df_enlaces_dedup)) {
   
 }
 
-ggplot(df_enlaces_dedup, aes(x = n, fill = is_absolute)) + geom_histogram(alpha = 0.6, position = "dodge", bins = 5) + scale_fill_manual(values = c("TRUE" = "blue", "FALSE" = "red")) + theme_minimal()
+ggplot(df_enlaces_dedup, aes(x = n, fill = is_absolute)) + geom_histogram(alpha = 0.6, position = "dodge", bins = 10) + scale_fill_manual(values = c("TRUE" = "blue", "FALSE" = "red")) + theme_minimal()
 
 ```
 
