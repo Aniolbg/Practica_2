@@ -11,11 +11,13 @@ install.packages("rvest")
 install.packages("httr")
 install.packages("XML")
 install.packages("dplyr")
+install.packages("ggplot2")
 
 library(httr)
 library(XML)
 library(rvest)
 library(dplyr)
+library(ggplot2)
 ```
 
 ## Pregunta 1:
@@ -142,7 +144,9 @@ for (i in 1:nrow(df_enlaces_dedup)) {
 
   # Obtenir status code
   resultat <- try(HEAD(url_abs), silent = TRUE)
-  df_enlaces_dedup$status[i] <- resultat$status_code 
+  if (inherits(resultat, "try-error")) { df_enlaces_dedup$status[i] <- NA }
+  else{df_enlaces_dedup$status[i] <- resultat$status_code}
+  
   
 
   # Pausa per no saturar el servidor
@@ -159,8 +163,6 @@ View(df_enlaces_dedup)
 ## Pregunta 2
 
 ### 1. Un histograma con la frecuencia de aparición de los enlaces, pero separado por URLs absolutas (con “http...”) y URLs relativas.
-
-> Un gráfico de barras indicando la suma de enlaces que apuntan a otros dominios o servicios (distinto a <https://www.mediawiki.org> en el caso de ejemplo) vs. la suma de los otros enlaces.
 
 ```{r}
 
