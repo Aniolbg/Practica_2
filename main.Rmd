@@ -178,7 +178,7 @@ for (i in 1:nrow(df_enlaces_dedup)) {
   
 }
 
-ggplot(df_enlaces_dedup, aes(x = n, fill = is_absolute)) + geom_histogram(alpha = 0.6, position = "dodge", bins = 10) + scale_fill_manual(values = c("TRUE" = "blue", "FALSE" = "red")) + theme_minimal()
+ggplot(df_enlaces_dedup, aes(x = n, fill = is_absolute)) + geom_histogram(alpha = 0.6, position = "dodge", bins = 10) + scale_fill_manual(values = c("TRUE" = "blue", "FALSE" = "red")) + theme_minimal() + scale_x_continuous(breaks=c(1,2))
 
 ```
 
@@ -187,6 +187,25 @@ ggplot(df_enlaces_dedup, aes(x = n, fill = is_absolute)) + geom_histogram(alpha 
 > Aquí queremos distinguir enlaces que apuntan a mediawiki versus el resto. Sabemos que las URLs relativas ya apuntan dentro, por lo tanto hay que analizar las URLs absolutas y comprobar que apunten a <https://www.mediawiki.org>.
 
 ```{r}
+df_enlaces_dedup$in_domain <- NA
+for (i in 1:nrow(df_enlaces_dedup)) {
+  u <- df_enlaces_dedup$url_abs[i]
+  if (grepl("mediawiki.org", u)) {
+    df_enlaces_dedup$in_domain[i] <- TRUE
+  }
+  else{
+    df_enlaces_dedup$in_domain[i] <- FALSE
+  }
+  
+}
+
+
+ggplot(df_enlaces_dedup, aes(x = in_domain)) +
+  geom_bar() +
+  scale_fill_manual(values = c("TRUE" = "yellow", "FALSE" = "tomato")) +
+  theme_minimal() +
+  labs(x = "Tipus d'URL", y = "Comptatge")
+
 
 ```
 
