@@ -28,6 +28,7 @@ Usamos el link para obtener los contenidos de la web y posteriormente parsearlo.
 
 ```{r}
 LINK  <- "https://www.mediawiki.org/wiki/MediaWiki"
+LINK_BASE  <- "https://www.mediawiki.org"
 res <- GET(LINK) 
 html_content <- content(res, "text", encoding = "UTF-8")
 
@@ -69,19 +70,19 @@ head(text_enlace, 10)
 Creamos un dataframe que contiene las url y los enlaces.
 
 ```{r}
-df_enlaces <- data.frame(url = enlaces, texto = text_enlace, stringsAsFactors = FALSE )
+df_enlaces <- data.frame(enlace = enlaces, texto = text_enlace, stringsAsFactors = FALSE )
 ```
 
 En esta sección nos dimos cuenta de que existen algunos links relacionados a imagenes que thenen una url = `#`. Como no són links normales, tomamos la decisión de quitarlos del dataset.
 
 ```{r}
-df_enlaces <- df_enlaces[df_enlaces$url!="#",]
+df_enlaces <- df_enlaces[df_enlaces$enlace!="#",]
 ```
 
 Posteriormente usamos la función `count` de *dyplr* para deduplicar las entradas repetidas y contar el numero de repeticiones.
 
 ```{r}
-df_enlaces_dedup <- df_enlaces %>% count(url, texto)
+df_enlaces_dedup <- df_enlaces %>% count(enlace, texto)
 View(df_enlaces_dedup)
 ```
 
@@ -100,6 +101,53 @@ View(df_enlaces_dedup)
 
 ```{r}
 # Se usa un bucle
+normalitza_url <- function(u, base_url) {
+  if (is.na(u) || u == "") return(NA)
+
+  # 1. URLs internes amb tag (#...)
+  if (grepl("^#", u)) {
+    return(base_url)
+  }
+
+  # 2. URLs absolutes (http o https)
+  if (grepl("^http", u)) {
+    return(u)
+  }
+
+  # 3. Subdominis amb format //xxxx
+  if (grepl("^//", u)) {
+    return(paste0("https:", u))
+  }
+
+  # 4. URLs relatives normals
+  if (grepl("^/", u)) {
+    return(paste0(base_url, u))
+  }
+
+  # 5. Altres casos estranys
+  return(NA)
+}
+
+df_enlaces_dedup$status <- NA  # nova columna
+df_enlaces_dedup$url_abs <- NA
+
+for (i in 1:nrow(df_enlaces_dedup)) {
+  u <- df_enlaces_dedup$enlace[i]
+
+  # Normalitzar
+  url_abs <- normalitza_url(u, LINK_BASE)
+
+  # Guardar la URL normalitzada (opcional però útil)
+  df_enlaces_dedup$url_abs[i] <- url_abs
+
+  # Obtenir status code
+  df_enlaces_dedup$status[i] <- try(HEAD(url_abs), silent = TRUE)
+
+  # Pausa per no saturar el servidor
+  #Sys.sleep(1)
+}
+View(df_enlaces_dedup)
+
 ```
 
 ------------------------------------------------------------------------
