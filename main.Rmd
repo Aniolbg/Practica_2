@@ -2,22 +2,25 @@
 title: "Practica_2"
 author: "Aniol, Omar, Marcel"
 date: "2026-01-12"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-install.packages("rvest")
-install.packages("httr")
-install.packages("XML")
-install.packages("dplyr")
-install.packages("ggplot2")
+# install.packages("rvest")
+# install.packages("httr")
+# install.packages("XML")
+# install.packages("dplyr")
+# install.packages("ggplot2")
 
 library(httr)
 library(XML)
 library(rvest)
 library(dplyr)
 library(ggplot2)
+library(DT)
 ```
 
 ## Pregunta 1:
@@ -85,7 +88,7 @@ Posteriormente usamos la función `count` de *dyplr* para deduplicar las entrada
 
 ```{r}
 df_enlaces_dedup <- df_enlaces %>% count(enlace, texto)
-View(df_enlaces_dedup)
+datatable(df_enlaces_dedup)
 ```
 
 ### 5. Para cada enlace, seguirlo e indicar si está activo (podemos usar el código de status HTTP al hacer una petición a esa URL).
@@ -146,9 +149,9 @@ for (i in 1:nrow(df_enlaces_dedup)) {
   if (inherits(resultat, "try-error")) { df_enlaces_dedup$status[i] <- NA }
   else{df_enlaces_dedup$status[i] <- resultat$status_code}
   
-  Sys.sleep(1)
+  Sys.sleep(0.1)
 }
-View(df_enlaces_dedup)
+datatable(df_enlaces_dedup)
 
 ```
 
