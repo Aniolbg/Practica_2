@@ -101,55 +101,51 @@ View(df_enlaces_dedup)
 >
 > Es recomendado poner un tiempo de espera entre petición y petición de pocos segundos (comando “Sys.sleep”), para evitar ser “baneados” por el servidor. Para poder examinar las URLs podemos usar expresiones regulares, funciones como “grep”, o mirar si en los primeros caracteres de la URL encontramos “//” o “http”. Para tratar las URLs podemos usar la ayuda de la función “paste”, para manipular cadenas de caracteres y poder añadir prefijos a las URLs si fuera necesario.
 
+Primero hemos creado una función que obtiene la url absoluta independientemente del input.
+
 ```{r}
-# Se usa un bucle
 normalitza_url <- function(u, base_url) {
   if (is.na(u) || u == "") return(NA)
 
-  # 1. URLs internes amb tag (#...)
   if (grepl("^#", u)) {
     return(base_url)
   }
 
-  # 2. URLs absolutes (http o https)
   if (grepl("^http", u)) {
     return(u)
   }
 
-  # 3. Subdominis amb format //xxxx
   if (grepl("^//", u)) {
     return(paste0("https:", u))
   }
 
-  # 4. URLs relatives normals
   if (grepl("^/", u)) {
     return(paste0(base_url, u))
   }
 
-  # 5. Altres casos estranys
   return(NA)
 }
+```
 
-df_enlaces_dedup$status <- NA  # nova columna
+Hemos añadido las url absolutas a una nueva columna del dataframe.
+
+Con la url absoluta hemos usado la función HEAD para determinar el status del enlace y lo hemos guardado en una columna del dataframe.
+
+```{r}
+df_enlaces_dedup$status <- NA
 df_enlaces_dedup$url_abs <- NA
 
 for (i in 1:nrow(df_enlaces_dedup)) {
   u <- df_enlaces_dedup$enlace[i]
 
-  # Normalitzar
   url_abs <- normalitza_url(u, LINK_BASE)
 
-  # Guardar la URL normalitzada (opcional però útil)
   df_enlaces_dedup$url_abs[i] <- url_abs
 
-  # Obtenir status code
   resultat <- try(HEAD(url_abs), silent = TRUE)
   if (inherits(resultat, "try-error")) { df_enlaces_dedup$status[i] <- NA }
   else{df_enlaces_dedup$status[i] <- resultat$status_code}
   
-  
-
-  # Pausa per no saturar el servidor
   Sys.sleep(1)
 }
 View(df_enlaces_dedup)
@@ -164,6 +160,9 @@ View(df_enlaces_dedup)
 
 ### 1. Un histograma con la frecuencia de aparición de los enlaces, pero separado por URLs absolutas (con “http...”) y URLs relativas.
 
+Hemos creado una nueva columna en el dataframe que indica si la url original era absoluta o no. A partir de esta columna i la de veces que aparece cada enlace hemos generado un histograma.
+
+El cian muestra el numero de urls absolutas y el naranja muestra el número de urls relativas.  
 ```{r}
 df_enlaces_dedup$is_absolute <- NA
 
@@ -178,13 +177,17 @@ for (i in 1:nrow(df_enlaces_dedup)) {
   
 }
 
-ggplot(df_enlaces_dedup, aes(x = n, fill = is_absolute)) + geom_histogram(alpha = 0.6, position = "dodge", bins = 10) + scale_fill_manual(values = c("TRUE" = "blue", "FALSE" = "red")) + theme_minimal() + scale_x_continuous(breaks=c(1,2))
+ggplot(df_enlaces_dedup, aes(x = n, fill = is_absolute)) + geom_histogram(alpha = 1, position = "dodge", bins = 2) + scale_fill_manual(values = c("TRUE" = "#0092EB", "FALSE" = "#EB8900")) + theme_minimal() + scale_x_continuous(breaks=c(1,2))
 
 ```
 
 ### 2. Un gráfico de barras indicando la suma de enlaces que apuntan a otros dominios o servicios (distinto a <https://www.mediawiki.org> en el caso de ejemplo) vs. la suma de los otros enlaces.
 
 > Aquí queremos distinguir enlaces que apuntan a mediawiki versus el resto. Sabemos que las URLs relativas ya apuntan dentro, por lo tanto hay que analizar las URLs absolutas y comprobar que apunten a <https://www.mediawiki.org>.
+
+En esta sección, añadimos una nueva columna en el dataframe que indica si la url redirije al propio dominio o no. 
+
+
 
 ```{r}
 df_enlaces_dedup$in_domain <- NA
@@ -202,7 +205,7 @@ for (i in 1:nrow(df_enlaces_dedup)) {
 
 ggplot(df_enlaces_dedup, aes(x = in_domain)) +
   geom_bar(aes(fill = in_domain)) +
-  scale_fill_manual(values = c("TRUE" = "green", "FALSE" = "tomato")) +
+  scale_fill_manual(values = c("TRUE" = "#EBE70B", "FALSE" = "#6900EB")) +
   theme_minimal()
 
 
@@ -212,6 +215,10 @@ ggplot(df_enlaces_dedup, aes(x = in_domain)) +
 ### 3. Un gráfico de tarta (pie chart) indicando los porcentajes de Status de nuestro análisis.
 
 > Por ejemplo, si hay 6 enlaces con status “200” y 4 enlaces con status “`404`”, la tarta mostrará un 60% con la etiqueta “`200`” y un 40% con la etiqueta “`404`”. Este gráfico lo uniremos a los anteriores. El objetivo final es obtener una imagen que recopile los gráficos generados.
+
+Primeramente hacemos un conteo de el número de cada status code y luego hacemos un piechart con ello. 
+
+En nuestro caso, todos los códigos són `200`. 
 
 ```{r}
 df_status <- df_enlaces_dedup %>% count(status)
