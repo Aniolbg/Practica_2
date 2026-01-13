@@ -201,10 +201,10 @@ for (i in 1:nrow(df_enlaces_dedup)) {
 
 
 ggplot(df_enlaces_dedup, aes(x = in_domain)) +
-  geom_bar() +
-  scale_fill_manual(values = c("TRUE" = "yellow", "FALSE" = "tomato")) +
-  theme_minimal() +
-  labs(x = "Tipus d'URL", y = "Comptatge")
+  geom_bar(aes(fill = in_domain)) +
+  scale_fill_manual(values = c("TRUE" = "green", "FALSE" = "tomato")) +
+  theme_minimal()
+
 
 
 ```
